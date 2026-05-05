@@ -1,0 +1,10 @@
+anonymize.py
+dummy/
+.claude/
+.pbix_extract/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+.DS_Store
+*.pbix

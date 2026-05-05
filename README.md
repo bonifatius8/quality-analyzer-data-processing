@@ -1,35 +1,100 @@
-# PowerBI ダッシュボード構築プロセス
+# PowerBI BI 開発ポートフォリオ — 品質分析ダッシュボード
 
-品質分析装置の計測データを PowerBI でダッシュボード化するためのデータ処理・分析リポジトリ。
+**目的:** 架空の品質分析装置を業務想定として PowerBI によるデータ分析基盤の構築手法を示す技術実証資料。BI エンジニアとして実務で担う各工程の実装内容を記録する。
+
+**対象データ:** 品質分析装置の計測出力（ダミー）— 1,100 件 / 100 指標 / 50 社
+
+**構成:** データ取込（PowerQuery）・データモデル（スタースキーマ）・集計ロジック（DAX 20 本超）・Python 統合・ダッシュボード（7 画面）
 
 > **Note:** 本リポジトリは技術デモンストレーション用に独立して構築したものです。データはすべてダミーです。
----
-
-## Overview
-
-- 対象データ: 品質分析装置の計測出力（グレード分類 × 100 指標）
-- サンプル数: 1,100 件 / 顧客数: 50 社
-- DAX メジャー: 20 本超 / PowerQuery クエリ: 5 本 / ダッシュボードページ: 7 ページ
-- 主要品質指標: 平均 58.1%  標準偏差 14.3%
-- 計測値A: 平均 14.34%  標準偏差 0.71%
-
-## Tech Stack
-
-- **PowerBI** — DAX・PowerQuery・Python ビジュアル
-- **Python** — データ探索・可視化・ML（scikit-learn）
-  - `pandas` / `numpy` — データ処理
-  - `matplotlib` / `seaborn` — 可視化
-  - `scikit-learn` — PCA・K-means クラスタリング
-  - `csv` / `utf-8-sig` — データ I/O
 
 ---
 
-## PowerBI Dashboard
+## 構築・実装した内容
 
-### Data Model
+- **データ整形**: 複数の CSV ファイルを結合・変換し、分析に使えるかたちに整形した（PowerQuery）
+- **データモデル設計**: 指標・顧客・地域などを整理したデータ構造（スタースキーマ）を設計した
+- **集計ロジック実装**: 平均・ばらつき・動的フィルタ・欠損補完などの計算を数式で実装した（DAX）
+- **機械学習との統合**: Python によるクラスタリング・次元削減の結果をダッシュボードに組み込んだ
+- **ダッシュボード設計**: KPI・分布・地域別・品質モニタリングなど、目的別に 7 画面を設計・実装した
+
+---
+
+## 担当できる作業領域
+
+全工程を把握しているため、作業指示書・要件定義書の作成や打ち合わせでの仕様すり合わせにも対応できる。
+
+- **データ取込・ETL**: PowerQuery 5 本。ソース読み込み → 型変換 → フィルタ → 列リネーム → テーブル結合を一通り実装済み
+- **データモデリング**: スタースキーマ設計（ファクト 1 + ディメンション 4）。PowerQuery で `customer_id` / `region` を結合しリレーション定義
+- **DAX メジャー開発**: 加重平均・CV%（統計）/ `SELECTEDVALUE + CALCULATE + FILTER`（動的クロス集計）/ `SWITCH + ISBLANK`（優先順位フォールバック）など 20 本超
+- **Python 統合**: PowerQuery 内で scikit-learn を実行。PCA・K-means の結果列をデータモデルに統合しビジュアルで直接利用
+- **ダッシュボード設計**: 7 ページ構成。スライサー連動・Python ビジュアル（`matplotlib`・`twinx` 二軸）・カスタムビジュアル（箱ひげ図）
+
+> `quality_analysis.ipynb` は pbix を直接公開できないため、ダッシュボード上の分析を Python で再現した補助資料。メインの成果物はデータモデル・DAX・PowerQuery にある。
+
+---
+
+## ダッシュボード
+
+### KPI サマリー
+
+サンプル種別ごとに計測値 A・B・C・個数を一画面で比較。スライサー連動で min / median / mean / max を切り替えて確認できる。
+
+![KPI summary](docs/images/dashboard_kpi.png)
+
+---
+
+### 計測値分布（ヒストグラム 4 面）
+
+「計測値のばらつきはどの指標で大きいか」をサンプル種別単位で確認。4 指標を同一スライサーで連動フィルタ。
+
+![histograms](docs/images/dashboard_histograms.png)
+
+---
+
+### 多系列散布図
+
+「計測値 A・B・C と個数の時系列上の関係」を二軸で同時表示。Python ビジュアル（`matplotlib`・`twinx`）で実装。
+
+![scatter](docs/images/dashboard_scatter.png)
+
+---
+
+### データ品質モニタリング
+
+「どの顧客のデータに記録漏れが多いか」を可視化。サンプル種別・日付・ID などの記録有無比率を積み上げ棒グラフで表示。
+
+![data quality](docs/images/dashboard_quality.png)
+
+---
+
+### 地域別分布
+
+「どの地域に顧客が集中しているか」を 4 階層（東西 → 地方 → 地域区分 → 県）の地図で確認。
+
+![region](docs/images/dashboard_region.png)
+
+---
+
+### PCA + K-means クラスタリング
+
+「品質指標 100 次元のサンプルはどのような群に分かれるか」を 2 次元で可視化。PowerQuery 内の Python スクリプトで生成した PC1 / PC2 / Cluster をバブルチャートで表示。
+
+![PCA cluster](docs/images/dashboard_pca.png)
+
+---
+
+### 箱ひげ図（サンプル種別比較）
+
+「サンプル種別間で計測値の分布にどれだけ差があるか」をカスタムビジュアルで比較。
+
+![boxplots](docs/images/dashboard_boxplots.png)
+
+---
+
+## データモデル
 
 `品質分析装置データ.csv` をファクトテーブルとする 5 テーブルのスタースキーマ。
-PowerQuery で `customer_id`・`region` を結合し、各ディメンションに直接接続。
 
 ```text
                              ┌─ 分析装置出力_詳細.csv  (1:1)  Cluster / PC1 / PC2
@@ -42,17 +107,15 @@ PowerQuery で `customer_id`・`region` を結合し、各ディメンション�
 
 ---
 
-### PowerQuery データ取込・加工処理
+## 技術詳細
 
-クエリ 5 本でデータ統合・変換を実施。
+### PowerQuery — データ取込・加工
 
-#### 標準 データ取込ステップ（全クエリ共通）
+クエリ 5 本でデータ統合・変換を実施。全クエリ共通の標準ステップ:
 
 - ソース読み込み → ヘッダー昇格 → 型変換 → フィルタ → 列リネーム
 
-#### Python 統合ステップ（分析装置出力_詳細.csv）
-
-PowerQuery 内で Python スクリプトを実行し、105 指標から次元削減・クラスタリングを行う：
+`分析装置出力_詳細.csv` のみ、PowerQuery 内で Python スクリプトを実行し 100 指標から次元削減・クラスタリング:
 
 ```python
 from sklearn.decomposition import PCA
@@ -69,7 +132,7 @@ clusters = km.fit_predict(X)        # → Cluster (0–5)
 
 ---
 
-### DAX Measures
+### DAX メジャー
 
 #### 統計メジャー
 
@@ -86,6 +149,8 @@ DIVIDE(
 
 #### 動的クロステーブル集計
 
+地図ビジュアルの選択状態を `SELECTEDVALUE` で捕捉し、`CALCULATE + FILTER` でクロステーブル集計:
+
 ```dax
 地域別種別数 =
 VAR SelectedValue = SELECTEDVALUE('顧客マスタ'[region])
@@ -96,9 +161,9 @@ RETURN
     )
 ```
 
-地図ビジュアルの選択状態を `SELECTEDVALUE` で捕捉し、`CALCULATE + FILTER` でクロステーブル集計。
-
 #### フォールバック計算列
+
+3 列の優先順位で欠損データを補完:
 
 ```dax
 サンプル種別 =
@@ -113,82 +178,13 @@ RETURN SWITCH(TRUE(),
 )
 ```
 
-3 列の優先順位フォールバックで欠損データを補完。
-
 その他: `種別あり比率` / `日付あり比率` / `ID_Aあり比率` / `計測値B/計測値A` など 20 本超。
 
 ---
 
-### Dashboard Pages
+## Python 分析（補助資料）
 
-#### KPI サマリー
-
-スライサー（サンプル種別）連動。計測値 A・B・C・カウント指標を min / median / mean / max で表示。
-
-![KPI summary](docs/images/dashboard_kpi.png)
-
----
-
-#### 主要計測値 ヒストグラム（4 面）
-
-計測値 A・B・C・カウント指標を同一スライサーで連動フィルタ。
-
-![histograms](docs/images/dashboard_histograms.png)
-
----
-
-#### 多系列散布図（Python ビジュアル）
-
-PowerBI の Python ビジュアルとして `matplotlib` を使用。`twinx()` で二軸を実装。
-
-```python
-fig, ax = plt.subplots()
-ax2 = ax.twinx()
-ax.scatter(x, metric_a,    color='#33AADD', label='計測値A')
-ax.scatter(x, metric_c,    color='#FF9955', label='計測値C')
-ax.scatter(x, metric_b,    color='#DD5511', label='計測値B')
-ax2.scatter(x, count,      color='#33CC44', label='個数')
-```
-
-![scatter](docs/images/dashboard_scatter.png)
-
----
-
-#### データ品質ダッシュボード
-
-記録項目（サンプル種別・日付・ID_A・ID_B）の有無比率を積み上げ棒グラフで可視化。
-
-![data quality](docs/images/dashboard_quality.png)
-
----
-
-#### 地域別分布
-
-顧客マスタ（地域マスタ 4 階層）を使った地域別集計。
-
-![region](docs/images/dashboard_region.png)
-
----
-
-#### PCA + K-means クラスタリング
-
-PowerQuery で生成した PC1 / PC2 / Cluster をバブルチャートで表示。品質グレード指標 6 次元の構造を可視化。
-
-![PCA cluster](docs/images/dashboard_pca.png)
-
----
-
-#### 箱ひげ図（サンプル種別比較）
-
-サンプル種別ごとの計測値分布を箱ひげ図で比較。カスタムビジュアルを使用。
-
-![boxplots](docs/images/dashboard_boxplots.png)
-
----
-
-## Python Analysis
-
-詳細なデータ探索・分析は [`quality_analysis.ipynb`](quality_analysis.ipynb) を参照。
+pbix を直接公開できないため、ダッシュボード上の分析を Python で再現した補足資料として [`quality_analysis.ipynb`](quality_analysis.ipynb) を掲載。
 
 ### 品質グレード構成比 / 主要指標分布
 
@@ -196,11 +192,11 @@ PowerQuery で生成した PC1 / PC2 / Cluster をバブルチャートで表示
 
 Grade A 平均 58.1% / Grade G 33.9%。
 
-### 計測値A 分析
+### 計測値 A 分析
 
 ![measurement analysis](docs/images/measurement_analysis.png)
 
-計測値A 平均 14.34%（目標値 14.5%）。計測値A vs 計測値B: r = 0.044。
+計測値 A 平均 14.34%（目標値 14.5%）。計測値 A vs 計測値 B: r = 0.044。
 
 ### 品質指標 相関マトリクス
 
@@ -214,9 +210,9 @@ Grade A vs Grade F: r = −0.06。
 
 ---
 
-## Files
+## ファイル構成
 
-- `quality_analysis.ipynb` — データ探索・分析ノートブック
+- `quality_analysis.ipynb` — ダッシュボード分析の Python 再現（補助資料）
 - `generate_dashboard_images.py` — ダッシュボード相当グラフ生成スクリプト
 - `分析装置出力_詳細.csv` — 品質分析装置出力（匿名化済み・1,100 件・100 指標）
 - `品質分析装置データ.csv` — 基本計測値（計測値 A・B・C）

@@ -115,7 +115,7 @@
 
 - ソース読み込み → ヘッダー昇格 → 型変換 → フィルタ → 列リネーム
 
-`分析装置出力_詳細.csv` のみ、PowerQuery 内で Python スクリプトを実行し 100 指標から次元削減・クラスタリング:
+`分析装置出力_詳細.csv` のみ、PowerQuery 内で Python スクリプトを実行し ドメイン指標から次元削減・クラスタリング:
 
 ```python
 from sklearn.decomposition import PCA
